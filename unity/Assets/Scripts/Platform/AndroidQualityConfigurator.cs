@@ -31,11 +31,15 @@ namespace BurritoChichero
             QualitySettings.maxQueuedFrames = 2;
             QualitySettings.anisotropicFiltering = AnisotropicFiltering.Enable;
 
+            int availableLevels = QualitySettings.names.Length;
+            int highLevel = Mathf.Clamp(4, 0, Mathf.Max(0, availableLevels - 1));
+            int mediumLevel = Mathf.Clamp(2, 0, Mathf.Max(0, availableLevels - 1));
+
             switch (tier)
             {
                 case AndroidQualityTier.High:
                     Application.targetFrameRate = 60;
-                    QualitySettings.SetQualityLevel(Mathf.Min(4, QualitySettings.names.Length - 1), true);
+                    QualitySettings.SetQualityLevel(highLevel, true);
                     QualitySettings.shadows = ShadowQuality.All;
                     QualitySettings.shadowResolution = ShadowResolution.Medium;
                     QualitySettings.shadowDistance = 55f;
@@ -45,7 +49,7 @@ namespace BurritoChichero
 
                 case AndroidQualityTier.Medium:
                     Application.targetFrameRate = 45;
-                    QualitySettings.SetQualityLevel(Mathf.Min(2, QualitySettings.names.Length - 1), true);
+                    QualitySettings.SetQualityLevel(mediumLevel, true);
                     QualitySettings.shadows = ShadowQuality.HardOnly;
                     QualitySettings.shadowResolution = ShadowResolution.Low;
                     QualitySettings.shadowDistance = 30f;

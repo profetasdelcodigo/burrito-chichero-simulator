@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { clampInput, safeProfile, safeRoom } from './worker.mjs'
+import { clampPose, safeProfile, safeRoom } from './worker.mjs'
 
 test('room codes are normalized and restricted to 4-8 alphanumeric characters', () => {
   assert.equal(safeRoom('piura1'), 'PIURA1')
@@ -31,7 +31,11 @@ test('profiles are bounded to the public allowlists', () => {
   })
 })
 
-test('movement input is finite, normalized and bounded', () => {
-  assert.deepEqual(clampInput({ x: 5, z: -2, jump: true }), { x: 1, z: -1, jump: true })
-  assert.deepEqual(clampInput({ x: 'NaN', z: Infinity, jump: 'true' }), { x: 0, z: 0, jump: false })
+test('remote poses are finite and bounded to the game arena', () => {
+  assert.deepEqual(clampPose({ x: 80, y: 3, z: -80, vx: 40, vz: -40, jump: true }), {
+    x: 49, y: 3, z: -49, vx: 20, vz: -20, jump: true,
+  })
+  assert.deepEqual(clampPose({ x: 'NaN', y: Infinity, z: null, vx: 'bad', vz: 2, jump: 'true' }), {
+    x: -17, y: 0, z: 0, vx: 0, vz: 2, jump: false,
+  })
 })

@@ -77,6 +77,7 @@ export class Game {
       if (!actor) {
         const view = new BurritoView(profile.color)
         view.setColor(profile.color)
+        view.setOwn(true)
         view.setAccessory(profile.accessory)
         if (this.modelSource) view.setModel(this.modelSource, this.modelAnimations)
         this.arena.scene.add(view.root)

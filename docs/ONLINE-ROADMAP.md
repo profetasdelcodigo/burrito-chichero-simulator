@@ -30,9 +30,27 @@ La beta no contiene una `SUPABASE_URL`, `SUPABASE_ANON_KEY`, token de Cloudflare
 
 El servidor debe aceptar inputs o snapshots dentro de límites, rechazar secuencias antiguas, cerrar conexiones lentas y enviar snapshots a todos los participantes a una frecuencia limitada. El cliente puede interpolar actores remotos, pero no decide recompensas, final de misión ni resultados.
 
+## Handshake de autenticación implementado en la rama de desarrollo
+
+El Worker ahora exige un primer mensaje `{ type: "auth", accessToken }` antes de admitir a un jugador. Valida el token contra `/auth/v1/user` de Supabase usando la clave pública configurada solo en el entorno del Worker. Las conexiones pendientes tienen un timeout de 5 segundos, cuentan para el límite de 10 y no reciben estado de sala antes de autenticarse. El Worker también exige un `Origin` incluido exactamente en `ALLOWED_ORIGINS`.
+
+Para configurar un despliegue futuro, sin guardar credenciales en Git:
+
+```bash
+cd cloudflare
+npx wrangler secret put SUPABASE_URL
+npx wrangler secret put SUPABASE_ANON_KEY
+npx wrangler secret put ALLOWED_ORIGINS
+npx wrangler deploy
+```
+
+Los valores esperados son la URL del proyecto Supabase, su publishable/anon key y el origen HTTPS exacto desde el que se servirá el juego. No ejecutar el despliegue hasta que el proyecto Supabase esté activo y el dominio final del cliente esté decidido. El endpoint no está desplegado ni verificado por este cambio.
+
+El cliente obtiene el access token de la sesión Supabase y lo envía como primer mensaje WebSocket. Si no hay sesión, endpoint o configuración, permanece en modo local. Esta autenticación protege el acceso a la sala, pero todavía no convierte el Worker en simulador autoritativo de movimiento o misiones.
+
 ## Integración propuesta
 
-1. Crear un Worker de Cloudflare con un Durable Object `GameRoom`.
+1. Desplegar el Worker de Cloudflare con un Durable Object `GameRoom` después de configurar y activar Supabase.
 2. Implementar handshake `join`, `profile`, `input`, `snapshot`, `mission_event` y `leave`.
 3. Validar el máximo de 10 en el Durable Object; nunca confiar en un contador HTML.
 4. Configurar `ALLOWED_ORIGINS` con el dominio final del cliente.

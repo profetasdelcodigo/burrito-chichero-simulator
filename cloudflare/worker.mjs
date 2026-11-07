@@ -3,7 +3,7 @@ const ROOM_RE = /^[A-Z0-9]{4,8}$/
 const PROFILE_NAME_MAX = 18
 const ALLOWED_ACCESSORIES = new Set(['pañuelo', 'sombrero', 'ninguno'])
 const ALLOWED_COLORS = new Set(['#e86b5a', '#e9b44c', '#55a7a3', '#7c78c2', '#d889b8'])
-const MAX_INPUT_RATE = 30
+const MAX_INPUT_RATE = 20
 const AUTH_TIMEOUT_MS = 5000
 const MAX_TOKEN_LENGTH = 8192
 
@@ -123,7 +123,7 @@ export class GameRoom {
         id,
         userId,
         profile: safeProfile(null),
-        input: { x: 0, z: 0, jump: false },
+        pose: { x: -17, y: 0, z: 15, vx: 0, vz: 0, jump: false },
         joinedAt: Date.now(),
       })
       json(pending.socket, { type: 'welcome', playerId: id, count: this.sessions.size, capacity: MAX_PLAYERS })
@@ -138,7 +138,7 @@ export class GameRoom {
       this.broadcast()
       return
     }
-    if (message.type !== 'input') return
+    if (message.type !== 'pose') return
 
     const now = Date.now()
     const previous = this.lastInput.get(id) || 0
@@ -164,7 +164,7 @@ export class GameRoom {
     const players = [...this.sessions.values()].map(session => ({
       playerId: session.id,
       profile: session.profile,
-      input: session.input,
+      pose: session.pose,
       joinedAt: session.joinedAt,
     }))
     const message = { type: 'room_state', count: players.length, capacity: MAX_PLAYERS, players }

@@ -2,7 +2,7 @@ const MAX_PLAYERS = 10
 const ROOM_RE = /^[A-Z0-9]{4,8}$/
 const PROFILE_NAME_MAX = 18
 const ALLOWED_ACCESSORIES = new Set(['pañuelo', 'sombrero', 'ninguno'])
-const ALLOWED_COLORS = new Set(['#e86b5a', '#e9b44c', '#55a7a3', '#7c78c2', '#d889b8'])
+const ALLOWED_COLORS = new Set(['#d97d4f', '#4d91b8', '#6eaa63', '#c9a348', '#a96ca8'])
 const MAX_INPUT_RATE = 20
 const AUTH_TIMEOUT_MS = 5000
 const MAX_TOKEN_LENGTH = 8192
@@ -13,7 +13,7 @@ function json(ws, payload) {
 
 export function safeProfile(raw) {
   const name = typeof raw?.name === 'string' ? raw.name.trim().slice(0, PROFILE_NAME_MAX) : ''
-  const color = typeof raw?.color === 'string' && ALLOWED_COLORS.has(raw.color) ? raw.color : '#e86b5a'
+  const color = typeof raw?.color === 'string' && ALLOWED_COLORS.has(raw.color) ? raw.color : '#d97d4f'
   const accessory = typeof raw?.accessory === 'string' && ALLOWED_ACCESSORIES.has(raw.accessory) ? raw.accessory : 'pañuelo'
   return { name: name || 'Chicherito', color, accessory }
 }
@@ -23,15 +23,6 @@ export function safeRoom(value) {
   return ROOM_RE.test(room) ? room : ''
 }
 
-export function clampInput(message) {
-  const x = Number(message?.x)
-  const z = Number(message?.z)
-  return {
-    x: Number.isFinite(x) ? Math.max(-1, Math.min(1, x)) : 0,
-    z: Number.isFinite(z) ? Math.max(-1, Math.min(1, z)) : 0,
-    jump: message?.jump === true,
-  }
-}
 
 export function clampPose(raw, fallback = { x: -17, y: 0, z: 15, vx: 0, vz: 0, jump: false }) {
   const bounded = (value, min, max, previous = 0) => {
@@ -72,7 +63,7 @@ export class GameRoom {
     this.env = env
     this.sessions = new Map()
     this.pending = new Map()
-    this.lastInput = new Map()
+    this.lastPose = new Map()
   }
 
   async fetch(request) {
@@ -156,9 +147,9 @@ export class GameRoom {
     if (message.type !== 'pose') return
 
     const now = Date.now()
-    const previous = this.lastInput.get(id) || 0
+    const previous = this.lastPose.get(id) || 0
     if (now - previous < 1000 / MAX_INPUT_RATE) return
-    this.lastInput.set(id, now)
+    this.lastPose.set(id, now)
     session.pose = clampPose(message, session.pose)
     this.broadcast()
   }
@@ -171,7 +162,7 @@ export class GameRoom {
       return
     }
     if (!this.sessions.delete(id)) return
-    this.lastInput.delete(id)
+    this.lastPose.delete(id)
     this.broadcast()
   }
 

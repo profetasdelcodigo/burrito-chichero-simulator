@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, "fix/**", "feat/**"]
+    branches: [main, "fix/**", "feat/**", "migration/**"]
   pull_request:
-    branches: [main]
+    branches: [main, "feat/**"]
 
 permissions:
   contents: read
@@ -49,3 +49,49 @@ jobs:
 
       - name: Production build
         run: pnpm build
+
+  unity-project-metadata:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate Unity project metadata
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("unity")
+          version_file = root / "ProjectSettings/ProjectVersion.txt"
+          manifest_file = root / "Packages/manifest.json"
+
+          assert version_file.is_file(), "Missing Unity ProjectVersion.txt"
+          assert "m_EditorVersion: 6000.3." in version_file.read_text(), "Expected Unity 6.3 LTS"
+
+          manifest = json.loads(manifest_file.read_text())
+          dependencies = manifest.get("dependencies", {})
+          required = {
+              "com.unity.addressables",
+              "com.unity.inputsystem",
+              "com.unity.render-pipelines.universal",
+              "com.unity.test-framework",
+              "com.unity.ugui",
+          }
+          missing = required.difference(dependencies)
+          assert not missing, f"Missing Unity packages: {sorted(missing)}"
+
+          scripts = [
+              "Assets/Scripts/Player/BurritoMotor.cs",
+              "Assets/Scripts/Player/BurritoProfile.cs",
+              "Assets/Scripts/Player/BurritoAnimatorDriver.cs",
+              "Assets/Scripts/Camera/ThirdPersonCameraRig.cs",
+              "Assets/Scripts/Input/BurritoInputBridge.cs",
+              "Assets/Scripts/Missions/MissionProgress.cs",
+              "Assets/Scripts/World/PiuraWorldManifest.cs",
+              "Assets/Scripts/Platform/AndroidQualityConfigurator.cs",
+          ]
+          absent = [path for path in scripts if not (root / path).is_file()]
+          assert not absent, f"Missing Unity C# files: {absent}"
+          print("Unity project metadata and migration scaffold are present.")
+          PY

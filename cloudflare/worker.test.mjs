@@ -17,7 +17,7 @@ test('profiles are bounded to the public allowlists', () => {
     accessory: 'sombrero',
   }), {
     name: 'Chicherito del Nor',
-    color: '#e86b5a',
+    color: '#d97d4f',
     accessory: 'sombrero',
   })
   assert.deepEqual(safeProfile({

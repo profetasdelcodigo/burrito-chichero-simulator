@@ -2,7 +2,8 @@ export type RoomStatus = 'offline' | 'connecting' | 'online' | 'full'
 export type RoomPlayer = { playerId: string; profile: { name: string; color: string; accessory: string }; joinedAt: number }
 
 type Hooks = { status(status: RoomStatus, count?: number): void; players(players: RoomPlayer[]): void }
-const DEFAULT_URL = 'wss://burritochichero-room.burritochichero.workers.dev/ws'
+// Keep the beta local until a deployed Worker is explicitly supplied at build time.
+const DEFAULT_URL = ''
 
 export class RoomClient {
   private socket?: WebSocket
@@ -11,6 +12,7 @@ export class RoomClient {
   constructor(private readonly hooks: Hooks) {}
   connect(room: string, profile: { name: string; color: string; accessory: string }): void {
     this.close()
+    if (!this.url) { this.hooks.status('offline'); return }
     this.hooks.status('connecting')
     let socket: WebSocket
     try { socket = new WebSocket(`${this.url}?room=${encodeURIComponent(room)}`) } catch { this.hooks.status('offline'); return }

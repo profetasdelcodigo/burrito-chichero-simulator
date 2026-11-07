@@ -26,7 +26,7 @@ Controles: `WASD` o flechas para moverse, `Shift` para sprint, `Espacio` para sa
 
 ## Estado del multijugador
 
-No hay un endpoint público configurado porque todavía no existen credenciales, un Worker de Cloudflare ni un proyecto Supabase autorizados. Por eso el cliente inicia en modo local y muestra explícitamente el estado pendiente. La carpeta `docs/ONLINE-ROADMAP.md` define la arquitectura para Durable Objects/WebSockets, salas de máximo 10 y Supabase para perfiles/progreso; no se debe publicar el cliente online hasta conectar y probar un `wss://` real.
+No hay un endpoint público verificado en esta sesión: la URL documentada respondió 404. El Worker fuente y la migración RLS ya están versionados en `cloudflare/` y `supabase/`, pero el cliente conserva `signalingUrl` vacío, inicia en modo local y muestra explícitamente el estado pendiente. No se debe publicar el cliente online hasta desplegar el Worker y probar un `wss://` real.
 
 El servidor `server/` pertenece al starter authoritative y se conserva como referencia técnica. No se presenta como el backend activo de esta beta. Al conectar el backend futuro, las reglas de ronda, sincronización, límites de sala y resultados deben pertenecer al servidor, no al cliente.
 

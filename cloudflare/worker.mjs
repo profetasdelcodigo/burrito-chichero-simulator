@@ -33,6 +33,21 @@ export function clampInput(message) {
   }
 }
 
+export function clampPose(raw, fallback = { x: -17, y: 0, z: 15, vx: 0, vz: 0, jump: false }) {
+  const bounded = (value, min, max, previous = 0) => {
+    const number = Number(value)
+    return Number.isFinite(number) ? Math.max(min, Math.min(max, number)) : previous
+  }
+  return {
+    x: bounded(raw?.x, -49, 49, fallback.x),
+    y: bounded(raw?.y, 0, 10),
+    z: bounded(raw?.z, -49, 49, fallback.z),
+    vx: bounded(raw?.vx, -20, 20),
+    vz: bounded(raw?.vz, -20, 20),
+    jump: raw?.jump === true,
+  }
+}
+
 async function verifySupabaseToken(token, env) {
   if (typeof token !== 'string' || token.length < 20 || token.length > MAX_TOKEN_LENGTH) return null
   const baseUrl = String(env.SUPABASE_URL || '').replace(/\/+$/, '')
@@ -144,7 +159,7 @@ export class GameRoom {
     const previous = this.lastInput.get(id) || 0
     if (now - previous < 1000 / MAX_INPUT_RATE) return
     this.lastInput.set(id, now)
-    session.input = clampInput(message)
+    session.pose = clampPose(message, session.pose)
     this.broadcast()
   }
 

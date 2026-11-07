@@ -41,6 +41,7 @@ async function boot(): Promise<void> {
     leave: () => {
       active = false
       room.close()
+      game.clearRemotePlayers()
       game.leave()
       ui.show('title')
     },
@@ -56,7 +57,10 @@ async function boot(): Promise<void> {
 
   const room = new RoomClient({
     status: (status, count) => ui.setRoomStatus(status, count),
-    players: players => ui.setRoomStatus('online', players.length),
+    players: players => {
+      game.setRemotePlayers(players)
+      ui.setRoomStatus('online', players.length + 1)
+    },
   })
 
   ui.show('boot')
@@ -79,8 +83,8 @@ async function boot(): Promise<void> {
       const movement = stickToWorld({ x: 0, z: 1 }, input.move.x, input.move.y)
       game.setInput(movement.x, movement.z)
       game.setActions(input.consume('jump'), input.held('sprint'), input.consume('interact'))
-      room.sendInput(movement.x, movement.z, input.held('jump'))
       game.step(dt)
+      room.sendPose(game.networkPose)
     },
     render: (_alpha, frameSeconds) => {
       input.update()

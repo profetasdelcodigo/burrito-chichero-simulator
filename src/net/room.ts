@@ -8,7 +8,7 @@ export type RoomPlayer = {
   joinedAt: number
 }
 
-type Hooks = { status(status: RoomStatus, count?: number): void; players(players: RoomPlayer[]): void }
+type Hooks = { status(status: RoomStatus, count?: number): void; players(players: RoomPlayer[]): void; spawn(position: { x: number; y: number; z: number }): void }
 const DEFAULT_URL = ''
 
 export class RoomClient {
@@ -65,10 +65,14 @@ export class RoomClient {
           count?: number
           code?: string
           playerId?: string
+          spawn?: { x: number; y: number; z: number }
         }
         if (message.type === 'welcome') {
           this.playerId = typeof message.playerId === 'string' ? message.playerId : ''
           this.hooks.status('online', message.count)
+          if (message.spawn && [message.spawn.x, message.spawn.y, message.spawn.z].every(Number.isFinite)) {
+            this.hooks.spawn(message.spawn)
+          }
           socket.send(JSON.stringify({ type: 'profile', ...profile }))
         }
         if (message.type === 'room_state' && Array.isArray(message.players)) {

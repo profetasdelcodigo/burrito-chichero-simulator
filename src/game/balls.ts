@@ -152,6 +152,16 @@ export class BurritoView {
 
   setColor(color: string): void {
     this.marker.material.color.set(color)
+    this.fallback.traverse(object => {
+      const mesh = object as THREE.Mesh
+      if (!mesh.isMesh) return
+      const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+      for (const material of materials) {
+        if ('color' in material && material.color instanceof THREE.Color && material !== this.marker.material) {
+          material.color.set(color)
+        }
+      }
+    })
   }
 
   update(position: { x: number; y: number; z: number }, velocity: { x: number; z: number }, dt: number, time: number, jumping = false): void {

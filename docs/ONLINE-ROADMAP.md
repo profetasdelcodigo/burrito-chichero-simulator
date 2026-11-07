@@ -48,6 +48,12 @@ Los valores esperados son la URL del proyecto Supabase, su publishable/anon key 
 
 El cliente obtiene el access token de la sesión Supabase y lo envía como primer mensaje WebSocket. Si no hay sesión, endpoint o configuración, permanece en modo local. Esta autenticación protege el acceso a la sala, pero todavía no convierte el Worker en simulador autoritativo de movimiento o misiones.
 
+## Prototipo de snapshots y actores remotos
+
+En la rama `feat/remote-burrito-rendering`, cada cliente envía su transformada (posición, velocidad y salto) a un máximo de 20 snapshots por segundo. El Durable Object limita los valores al área jugable, asigna una posición inicial distinta por orden de entrada y retransmite el estado junto con el perfil. El cliente excluye su propio `playerId`, crea un `BurritoView` para cada participante remoto, aplica su accesorio/color y suaviza el desplazamiento entre snapshots.
+
+**Límite importante:** esta fase es cliente-autoritativa. El Worker limita formato, frecuencia y rangos, pero no simula física ni puede demostrar que la posición reportada sea legítima. No usar todavía para competición, recompensas, colisiones o progreso compartido. La próxima fase debe mover la simulación a servidor y añadir secuencias monotónicas, reconciliación y validación de saltos/velocidad.
+
 ## Integración propuesta
 
 1. Desplegar el Worker de Cloudflare con un Durable Object `GameRoom` después de configurar y activar Supabase.

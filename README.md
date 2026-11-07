@@ -26,7 +26,7 @@ Controles: `WASD` o flechas para moverse, `Shift` para sprint, `Espacio` para sa
 
 ## Estado del multijugador
 
-No hay un endpoint público verificado en esta sesión: la URL documentada respondió 404. El Worker fuente y la migración RLS ya están versionados en `cloudflare/` y `supabase/`, pero el cliente conserva `signalingUrl` vacío, inicia en modo local y muestra explícitamente el estado pendiente. No se debe publicar el cliente online hasta desplegar el Worker y probar un `wss://` real.
+No hay un endpoint público verificado en esta sesión: la URL anterior respondió 404. El cliente puede usar `VITE_ROOM_URL` cuando exista un Worker desplegado y probado; sin esa variable, permanece en modo local. El Worker exige sesión anónima/autenticada de Supabase, valida el origen permitido y retransmite snapshots de posición limitados a 20 Hz. El cliente crea burritos remotos y suaviza sus transformaciones. Esta sincronización inicial es cliente-autoritativa: no valida colisiones, velocidad real, saltos ni misiones. No se debe publicar el modo online hasta desplegar el Worker, activar Supabase y probar dos clientes reales.
 
 El servidor `server/` pertenece al starter authoritative y se conserva como referencia técnica. No se presenta como el backend activo de esta beta. Al conectar el backend futuro, las reglas de ronda, sincronización, límites de sala y resultados deben pertenecer al servidor, no al cliente.
 

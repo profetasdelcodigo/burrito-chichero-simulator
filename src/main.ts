@@ -20,6 +20,11 @@ async function boot(): Promise<void> {
   const renderer = new Renderer(canvas, save.data.quality)
   let game: Game
   let active = false
+  let cloudSession = false
+
+  // Start authentication while the game assets load. The local game must never
+  // depend on Supabase being available.
+  const cloudSessionPromise = ensureAnonymousSession()
 
   const ui = new Ui(save, audio, input, {
     play: (profile: PlayerProfile) => {
@@ -27,7 +32,7 @@ async function boot(): Promise<void> {
       audio.startMusic()
       game.configure(profile)
       game.startExploration()
-      void savePlayerProfile(profile)
+      if (cloudSession) void savePlayerProfile(profile)
       room.connect('PIURA1', profile)
       active = true
       ui.show('hud')
@@ -53,13 +58,13 @@ async function boot(): Promise<void> {
     status: (status, count) => ui.setRoomStatus(status, count),
     players: players => ui.setRoomStatus('online', players.length),
   })
-  void ensureAnonymousSession()
 
   ui.show('boot')
   ui.setBootProgress(0.2)
   game = new Game(renderer, audio, { event: kind => ui.notify(kind) })
   ui.setBootProgress(0.55)
   await game.loadAssets()
+  cloudSession = await cloudSessionPromise
   ui.setBootProgress(0.9)
   if (safeGet(SAVE_KEY) === null) save.update({ quality: suggestQuality() })
   audio.setVolumes(save.data.musicVolume, save.data.sfxVolume, save.data.muted)

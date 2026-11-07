@@ -34,6 +34,19 @@ export async function ensureAnonymousSession(): Promise<boolean> {
   }
 }
 
+/** Returns the current access token only for the authenticated room handshake. */
+export async function getRoomAccessToken(): Promise<string | null> {
+  if (!supabase) return null
+  try {
+    const { data, error } = await supabase.auth.getSession()
+    if (error) return null
+    const token = data.session?.access_token
+    return typeof token === 'string' && token.length > 0 ? token : null
+  } catch {
+    return null
+  }
+}
+
 export async function savePlayerProfile(profile: PlayerProfile): Promise<boolean> {
   if (!supabase) return false
 

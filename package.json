@@ -14,7 +14,8 @@
     "smoke": "node scripts/smoke.mjs",
     "android:sync": "pnpm build && cap sync android",
     "android:debug": "pnpm android:sync && gradle -p android :app:assembleDebug",
-    "manus:build-source": "tsc --noEmit && vite build && node scripts/check-size.mjs"
+    "manus:build-source": "tsc --noEmit && vite build && node scripts/check-size.mjs",
+    "test:worker": "node --test cloudflare/worker.test.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.6.0",

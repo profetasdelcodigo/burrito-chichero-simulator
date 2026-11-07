@@ -61,6 +61,7 @@ async function boot(): Promise<void> {
       game.setRemotePlayers(players)
       ui.setRoomStatus('online', players.length + 1)
     },
+    spawn: position => game.setPlayerSpawn(position),
   })
 
   ui.show('boot')

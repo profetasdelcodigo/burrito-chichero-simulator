@@ -5,9 +5,11 @@ import type { Renderer } from '../engine/renderer'
 import { Arena } from './arena'
 import { ArenaCamera } from './camera'
 import { Accessory, BurritoView, PLAYER_COLORS } from './balls'
+import type { RoomPlayer } from '../net/room'
 
 export type PlayerProfile = { name: string; color: string; accessory: Accessory }
 export type GameHooks = { event(kind: 'mission' | 'jump' | 'interact'): void }
+type RemoteActor = { view: BurritoView; target: THREE.Vector3; velocity: THREE.Vector2; jumping: boolean; profileKey: string }
 
 export class Game {
   readonly arena: Arena
@@ -17,6 +19,9 @@ export class Game {
   reducedMotion = false
   profile: PlayerProfile = { name: 'Chicherito', color: PLAYER_COLORS[0], accessory: 'pañuelo' }
   private readonly assets = new Assets()
+  private readonly remotePlayers = new Map<string, RemoteActor>()
+  private modelSource?: THREE.Object3D
+  private modelAnimations: THREE.AnimationClip[] = []
   private readonly audio: Audio
   private readonly hooks: GameHooks
   private readonly velocity = new THREE.Vector3()
@@ -45,7 +50,10 @@ export class Game {
   async loadAssets(): Promise<void> {
     try {
       const gltf = await this.assets.gltf('/assets/models/burrito-player-animated.glb')
+      this.modelSource = gltf.scene
+      this.modelAnimations = gltf.animations
       this.player.setModel(gltf.scene, gltf.animations)
+      for (const actor of this.remotePlayers.values()) actor.view.setModel(gltf.scene, gltf.animations)
       for (const companion of this.companions) companion.view.setModel(gltf.scene, gltf.animations)
     } catch {
       // The procedural fallback remains visible when the generated model is still being registered.
@@ -56,6 +64,60 @@ export class Game {
     this.profile = { ...profile, name: profile.name.trim().slice(0, 18) || 'Chicherito' }
     this.player.setColor(profile.color)
     this.player.setAccessory(profile.accessory)
+  }
+
+  setRemotePlayers(players: readonly RoomPlayer[]): void {
+    const seen = new Set<string>()
+    for (const player of players) {
+      if (!player.playerId || player.playerId.length > 80) continue
+      seen.add(player.playerId)
+      const profile = player.profile
+      const profileKey = `${profile.name}|${profile.color}|${profile.accessory}`
+      let actor = this.remotePlayers.get(player.playerId)
+      if (!actor) {
+        const view = new BurritoView(profile.color)
+        view.setColor(profile.color)
+        view.setAccessory(profile.accessory)
+        if (this.modelSource) view.setModel(this.modelSource, this.modelAnimations)
+        this.arena.scene.add(view.root)
+        actor = {
+          view,
+          target: new THREE.Vector3(player.pose.x, player.pose.y, player.pose.z),
+          velocity: new THREE.Vector2(player.pose.vx, player.pose.vz),
+          jumping: player.pose.jump,
+          profileKey,
+        }
+        view.root.position.copy(actor.target)
+        this.remotePlayers.set(player.playerId, actor)
+      } else {
+        if (actor.profileKey !== profileKey) {
+          actor.view.setColor(profile.color)
+          actor.view.setAccessory(profile.accessory)
+          actor.profileKey = profileKey
+        }
+        actor.target.set(
+          THREE.MathUtils.clamp(player.pose.x, -49, 49),
+          THREE.MathUtils.clamp(player.pose.y, 0, 10),
+          THREE.MathUtils.clamp(player.pose.z, -49, 49),
+        )
+        actor.velocity.set(
+          THREE.MathUtils.clamp(player.pose.vx, -20, 20),
+          THREE.MathUtils.clamp(player.pose.vz, -20, 20),
+        )
+        actor.jumping = player.pose.jump
+      }
+    }
+
+    for (const [id, actor] of this.remotePlayers) {
+      if (seen.has(id)) continue
+      this.arena.scene.remove(actor.view.root)
+      this.remotePlayers.delete(id)
+    }
+  }
+
+  clearRemotePlayers(): void {
+    for (const actor of this.remotePlayers.values()) this.arena.scene.remove(actor.view.root)
+    this.remotePlayers.clear()
   }
 
   setInput(x: number, z: number): void {
@@ -101,6 +163,18 @@ export class Game {
     this.player.root.position.x = THREE.MathUtils.clamp(this.player.root.position.x + this.velocity.x * dt, -49, 49)
     this.player.root.position.z = THREE.MathUtils.clamp(this.player.root.position.z + this.velocity.z * dt, -49, 49)
     this.player.update({ x: this.player.root.position.x, y: this.y, z: this.player.root.position.z }, { x: this.velocity.x, z: this.velocity.z }, dt, this.time, !this.grounded)
+    for (const actor of this.remotePlayers.values()) {
+      const blend = 1 - Math.exp(-dt * 14)
+      actor.view.root.position.lerp(actor.target, blend)
+      const position = actor.view.root.position
+      actor.view.update(
+        { x: position.x, y: position.y, z: position.z },
+        { x: actor.velocity.x, z: actor.velocity.y },
+        dt,
+        this.time,
+        actor.jumping,
+      )
+    }
     for (const companion of this.companions) {
       const drift = Math.sin(this.time * 0.45 + companion.x) * 0.4
       companion.view.update({ x: companion.x + drift, y: 0, z: companion.z }, { x: 0, z: 0 }, dt, this.time)
@@ -155,6 +229,17 @@ export class Game {
     if (this.missionStep === 0) return { step: 0, text: 'Llega al punto INICIO', progress: '0/2', pulse: false }
     if (this.missionStep === 1) return { step: 1, text: 'Busca la mesa de CHICHA', progress: '1/2', pulse: false }
     return { step: 2, text: '¡Actividad completada! La jarra está lista', progress: '2/2', pulse: this.missionPulse > 0 }
+  }
+
+  get networkPose(): { x: number; y: number; z: number; vx: number; vz: number; jump: boolean } {
+    return {
+      x: this.player.root.position.x,
+      y: this.y,
+      z: this.player.root.position.z,
+      vx: this.velocity.x,
+      vz: this.velocity.z,
+      jump: !this.grounded,
+    }
   }
 
   get playerPosition(): { x: number; z: number; y: number } {

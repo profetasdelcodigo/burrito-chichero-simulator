@@ -66,6 +66,18 @@ export class Game {
     this.player.setAccessory(profile.accessory)
   }
 
+  setPlayerSpawn(position: { x: number; y: number; z: number }): void {
+    this.player.root.position.set(
+      THREE.MathUtils.clamp(position.x, -49, 49),
+      THREE.MathUtils.clamp(position.y, 0, 10),
+      THREE.MathUtils.clamp(position.z, -49, 49),
+    )
+    this.y = this.player.root.position.y
+    this.vy = 0
+    this.velocity.set(0, 0, 0)
+    this.grounded = this.y === 0
+  }
+
   setRemotePlayers(players: readonly RoomPlayer[]): void {
     const seen = new Set<string>()
     for (const player of players) {

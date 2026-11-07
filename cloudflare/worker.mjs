@@ -124,15 +124,17 @@ export class GameRoom {
 
       clearTimeout(pending.timer)
       this.pending.delete(id)
+      const slot = this.sessions.size
+      const spawn = { x: Math.max(-17, Math.min(5.5, -17 + slot * 2.5)), y: 0, z: 15 }
       this.sessions.set(id, {
         socket: pending.socket,
         id,
         userId,
         profile: safeProfile(null),
-        pose: { x: -17, y: 0, z: 15, vx: 0, vz: 0, jump: false },
+        pose: { ...spawn, vx: 0, vz: 0, jump: false },
         joinedAt: Date.now(),
       })
-      json(pending.socket, { type: 'welcome', playerId: id, count: this.sessions.size, capacity: MAX_PLAYERS })
+      json(pending.socket, { type: 'welcome', playerId: id, spawn, count: this.sessions.size, capacity: MAX_PLAYERS })
       this.broadcast()
       return
     }

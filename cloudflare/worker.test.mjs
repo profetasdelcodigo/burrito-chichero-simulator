@@ -13,7 +13,7 @@ test('room codes are normalized and restricted to 4-8 alphanumeric characters', 
 test('profiles are bounded to the public allowlists', () => {
   assert.deepEqual(safeProfile({
     name: '  Chicherito del Norte, muy largo  ',
-    color: '#e86b5a',
+    color: '#d97d4f',
     accessory: 'sombrero',
   }), {
     name: 'Chicherito del Nor',
@@ -26,7 +26,7 @@ test('profiles are bounded to the public allowlists', () => {
     accessory: 'unknown',
   }), {
     name: 'Chicherito',
-    color: '#e86b5a',
+    color: '#d97d4f',
     accessory: 'pañuelo',
   })
 })
